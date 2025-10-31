@@ -1,7 +1,6 @@
 package com.johnmaronga.bookflow.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -16,10 +15,14 @@ sealed class Screen(val route: String) {
     // You can add more screens here later like:
     // object Home : Screen("home")
     // object SignUp : Screen("signup")
+    // object AddBook : Screen("add_book")
+    // object BookDetails : Screen("book_details")
 }
 
 @Composable
-fun BookFlowNavigation() {
+fun BookFlowNavigation(
+    onWebSearchRequest: () -> Unit = {} // Add this parameter
+) {
     val navController = rememberNavController()
 
     NavHost(
@@ -71,11 +74,45 @@ fun BookFlowNavigation() {
             DashboardScreen(
                 onAddBookClick = {
                     // TODO: Navigate to Add Book screen when implemented
+                    // navController.navigate(Screen.AddBook.route)
                 },
                 onSeeAllClick = { section ->
                     // TODO: Navigate to detailed lists when implemented
+                    // when(section) {
+                    //     "currently_reading" -> navController.navigate("currently_reading_list")
+                    //     "recommendations" -> navController.navigate("recommendations_list")
+                    //     "reviews" -> navController.navigate("reviews_list")
+                    // }
+                },
+                onBookClick = { bookId ->
+                    // TODO: Navigate to Book Details screen when implemented
+                    // navController.navigate("${Screen.BookDetails.route}/$bookId")
+                },
+                onWebSearchClick = onWebSearchRequest // Add the web search callback here
+            )
+        }
+
+        // You can add more composable destinations here for future screens:
+        /*
+        composable(Screen.AddBook.route) {
+            AddBookScreen(
+                onBackClick = { navController.popBackStack() },
+                onBookAdded = { book ->
+                    navController.navigate("${Screen.BookDetails.route}/${book.id}")
                 }
             )
         }
+
+        composable("${Screen.BookDetails.route}/{bookId}") { backStackEntry ->
+            val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
+            BookDetailsScreen(
+                bookId = bookId,
+                onBackClick = { navController.popBackStack() },
+                onEditClick = {
+                    // Navigate to edit screen
+                }
+            )
+        }
+        */
     }
 }

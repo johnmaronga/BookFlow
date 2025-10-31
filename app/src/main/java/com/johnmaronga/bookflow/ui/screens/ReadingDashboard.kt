@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
@@ -31,17 +30,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.Image
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
-import com.johnmaronga.bookflow.R
 import com.johnmaronga.bookflow.ui.theme.BookFlowTheme
 
 @Composable
@@ -49,6 +43,7 @@ fun DashboardScreen(
     onAddBookClick: () -> Unit = {},
     onSeeAllClick: (String) -> Unit = {},
     onBookClick: (String) -> Unit = {},
+    onWebSearchClick: () -> Unit = {},
     currentlyReading: List<Book> = emptyList(),
     recommendations: List<Book> = emptyList(),
     recentReviews: List<Review> = emptyList(),
@@ -82,7 +77,8 @@ fun DashboardScreen(
             item {
                 QuickActionsRow(
                     onAddBookClick = onAddBookClick,
-                    onSearchClick = { onSeeAllClick("search") }
+                    //onSearchClick = { onSeeAllClick("search") },
+                    onWebSearchClick = onWebSearchClick
                 )
             }
 
@@ -261,7 +257,9 @@ fun StatCard(
 @Composable
 fun QuickActionsRow(
     onAddBookClick: () -> Unit,
-    onSearchClick: () -> Unit
+    //onSearchClick: () -> Unit,
+    onWebSearchClick: () -> Unit
+
 ) {
     Row(
         modifier = Modifier
@@ -276,9 +274,9 @@ fun QuickActionsRow(
             modifier = Modifier.weight(1f)
         )
         QuickActionButton(
-            text = "Browse",
+            text = "Web Search",
             icon = Icons.Default.Search,
-            onClick = onSearchClick,
+            onClick = onWebSearchClick,
             modifier = Modifier.weight(1f)
         )
     }
@@ -640,7 +638,20 @@ enum class BookShelf {
 @Composable
 fun DashboardScreenPreview() {
     BookFlowTheme {
-        DashboardScreen()
+        DashboardScreen(
+            onWebSearchClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun WebSearchDialogPreview() {
+    BookFlowTheme {
+        WebSearchDialog(
+            onDismiss = {},
+            onSearch = {}
+        )
     }
 }
 
