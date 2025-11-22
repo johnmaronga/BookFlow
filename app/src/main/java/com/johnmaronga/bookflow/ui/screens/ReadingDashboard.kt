@@ -2,6 +2,7 @@ package com.johnmaronga.bookflow.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -25,18 +27,28 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.johnmaronga.bookflow.ui.theme.BookFlowTheme
+import com.johnmaronga.bookflow.ui.viewmodel.DashboardViewModel
+import com.johnmaronga.bookflow.ui.viewmodel.ViewModelFactory
 
 @Composable
 fun DashboardScreen(
@@ -44,12 +56,22 @@ fun DashboardScreen(
     onSeeAllClick: (String) -> Unit = {},
     onBookClick: (String) -> Unit = {},
     onWebSearchClick: () -> Unit = {},
-    currentlyReading: List<Book> = emptyList(),
-    recommendations: List<Book> = emptyList(),
-    recentReviews: List<Review> = emptyList(),
-    readingStats: ReadingStats = ReadingStats()
+    viewModel: DashboardViewModel = viewModel(
+        factory = ViewModelFactory(LocalContext.current)
+    )
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Show error messages
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearError()
+        }
+    }
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddBookClick,
@@ -59,6 +81,15 @@ fun DashboardScreen(
             }
         }
     ) { innerPadding ->
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+            return@Scaffold
+        }
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
@@ -68,7 +99,7 @@ fun DashboardScreen(
             // Header with Stats
             item {
                 DashboardHeader(
-                    stats = readingStats,
+                    stats = ReadingStats(), // TODO: Calculate from actual data
                     onSearchClick = { onSeeAllClick("search") }
                 )
             }
@@ -90,7 +121,7 @@ fun DashboardScreen(
                 )
             }
 
-            if (currentlyReading.isEmpty()) {
+            if (uiState.currentlyReading.isEmpty()) {
                 item {
                     EmptyColumnCard(
                         message = "No books currently being read",
@@ -99,10 +130,11 @@ fun DashboardScreen(
                     )
                 }
             } else {
-                items(currentlyReading) { book ->
-                    BookProgressCard(
-                        book = book,
-                        onClick = { onBookClick(book.id) }
+                items(uiState.currentlyReading) { progress ->
+                    // TODO: Fetch book details and display
+                    Text(
+                        text = "Book ID: ${progress.bookId} - ${progress.currentPage}/${progress.totalPages}",
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
             }
@@ -122,24 +154,32 @@ fun DashboardScreen(
                 )
             }
 
-            // Personalized Recommendations Section
+            // Trending Books Section
             item {
                 SectionHeader(
-                    title = "Personalized Recommendations",
-                    onSeeAllClick = { onSeeAllClick("recommendations") }
+                    title = "Trending Books",
+                    onSeeAllClick = { onSeeAllClick("trending") }
                 )
             }
 
-            if (recommendations.isEmpty()) {
+            if (uiState.trendingBooks.isEmpty()) {
                 item {
                     EmptyColumnCard(
-                        message = "Rate more books to get personalized recommendations"
+                        message = "Loading trending books..."
                     )
                 }
             } else {
-                items(recommendations.chunked(2)) { rowBooks ->
+                items(uiState.trendingBooks.chunked(2)) { rowBooks ->
                     BookRow(
-                        books = rowBooks,
+                        books = rowBooks.map { book ->
+                            Book(
+                                id = book.id,
+                                title = book.title,
+                                author = book.author,
+                                coverUrl = book.coverImageUrl,
+                                totalPages = book.pageCount ?: 0
+                            )
+                        },
                         onBookClick = { bookId -> onBookClick(bookId) }
                     )
                 }
@@ -153,14 +193,20 @@ fun DashboardScreen(
                 )
             }
 
-            if (recentReviews.isEmpty()) {
+            if (uiState.recentReviews.isEmpty()) {
                 item {
                     EmptyColumnCard(message = "No reviews yet")
                 }
             } else {
-                items(recentReviews) { review ->
+                items(uiState.recentReviews) { review ->
                     ReviewCard(
-                        review = review,
+                        review = Review(
+                            id = review.id,
+                            bookId = review.bookId,
+                            rating = review.rating,
+                            content = review.reviewText ?: "",
+                            date = "Recently" // TODO: Format timestamp
+                        ),
                         onBookClick = { onBookClick(review.bookId) }
                     )
                 }
