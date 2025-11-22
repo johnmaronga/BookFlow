@@ -1,45 +1,104 @@
 package com.johnmaronga.bookflow.ui.viewmodel
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import com.johnmaronga.bookflow.data.local.AppDatabase
-import com.johnmaronga.bookflow.data.local.SessionManager
-import com.johnmaronga.bookflow.data.remote.RetrofitClient
-import com.johnmaronga.bookflow.data.repository.AuthRepository
-import com.johnmaronga.bookflow.data.repository.BookRepositoryImpl
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
-class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
+data class AuthUiState(
+    val email: String = "",
+    val password: String = "",
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val isEmailValid: Boolean = true,
+    val isPasswordValid: Boolean = true,
+    val isAuthenticated: Boolean = false
+)
 
-    private val database by lazy { AppDatabase.getDatabase(context) }
-    private val sessionManager by lazy { SessionManager(context) }
+class AuthViewModel : ViewModel() {
 
-    private val bookRepository by lazy {
-        BookRepositoryImpl(
-            bookDao = database.bookDao(),
-            readingProgressDao = database.readingProgressDao(),
-            reviewDao = database.reviewDao(),
-            apiService = RetrofitClient.bookApiService
+    private val _uiState = MutableStateFlow(AuthUiState())
+    val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+    fun updateEmail(email: String) {
+        _uiState.value = _uiState.value.copy(
+            email = email,
+            isEmailValid = true,
+            error = null
         )
     }
 
-    private val authRepository by lazy {
-        AuthRepository(
-            userDao = database.userDao(),
-            sessionManager = sessionManager
+    fun updatePassword(password: String) {
+        _uiState.value = _uiState.value.copy(
+            password = password,
+            isPasswordValid = true,
+            error = null
         )
     }
 
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return when {
-            modelClass.isAssignableFrom(DashboardViewModel::class.java) -> {
-                DashboardViewModel(bookRepository) as T
+    fun signIn() {
+        if (!validateInputs()) return
+
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+
+        // TODO: Implement actual authentication logic
+        // For now, simulate successful sign in
+        _uiState.value = _uiState.value.copy(
+            isLoading = false,
+            isAuthenticated = true
+        )
+    }
+
+    fun signUp() {
+        if (!validateInputs()) return
+
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+
+        // TODO: Implement actual sign up logic
+        // For now, simulate successful sign up
+        _uiState.value = _uiState.value.copy(
+            isLoading = false,
+            isAuthenticated = true
+        )
+    }
+
+    fun skipAuth() {
+        _uiState.value = _uiState.value.copy(isAuthenticated = true)
+    }
+
+    private fun validateInputs(): Boolean {
+        val email = _uiState.value.email
+        val password = _uiState.value.password
+
+        val isEmailValid = isValidEmail(email)
+        val isPasswordValid = isValidPassword(password)
+
+        _uiState.value = _uiState.value.copy(
+            isEmailValid = isEmailValid,
+            isPasswordValid = isPasswordValid,
+            error = when {
+                !isEmailValid -> "Please enter a valid email address"
+                !isPasswordValid -> "Password must be at least 6 characters"
+                else -> null
             }
-            modelClass.isAssignableFrom(AuthViewModel::class.java) -> {
-                AuthViewModel(authRepository) as T
-            }
-            else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-        }
+        )
+
+        return isEmailValid && isPasswordValid
+    }
+
+    private fun isValidEmail(email: String): Boolean {
+        return email.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    private fun isValidPassword(password: String): Boolean {
+        return password.length >= 6
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun resetState() {
+        _uiState.value = AuthUiState()
     }
 }

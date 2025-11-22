@@ -12,25 +12,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class DashboardUiState(
-    val currentlyReading: List<BookWithProgress> = emptyList(),
+    val currentlyReading: List<ReadingProgress> = emptyList(),
     val recentBooks: List<Book> = emptyList(),
     val recentReviews: List<Review> = emptyList(),
     val trendingBooks: List<Book> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isSyncing: Boolean = false,
-    val readingStats: ReadingStats = ReadingStats()
-)
-
-data class BookWithProgress(
-    val book: Book,
-    val progress: ReadingProgress
-)
-
-data class ReadingStats(
-    val booksRead: Int = 0,
-    val pagesRead: Int = 0,
-    val readingStreak: Int = 0
+    val isSyncing: Boolean = false
 )
 
 class DashboardViewModel(
@@ -52,14 +40,10 @@ class DashboardViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             try {
-                // Collect currently reading books with their details
+                // Collect currently reading books
                 launch {
-                    repository.getCurrentlyReading().collect { progressList ->
-                        val booksWithProgress = progressList.mapNotNull { progress ->
-                            val book = repository.getBookById(progress.bookId)
-                            book?.let { BookWithProgress(it, progress) }
-                        }
-                        _uiState.value = _uiState.value.copy(currentlyReading = booksWithProgress)
+                    repository.getCurrentlyReading().collect { progress ->
+                        _uiState.value = _uiState.value.copy(currentlyReading = progress)
                     }
                 }
 
@@ -77,13 +61,6 @@ class DashboardViewModel(
                 launch {
                     repository.getAllReviews().collect { reviews ->
                         _uiState.value = _uiState.value.copy(recentReviews = reviews.take(5))
-                    }
-                }
-
-                // Collect all progress for stats calculation
-                launch {
-                    repository.getAllProgress().collect { allProgress ->
-                        calculateStats(allProgress)
                     }
                 }
 
@@ -197,57 +174,5 @@ class DashboardViewModel(
 
     fun clearSearchResults() {
         _searchResults.value = UiState.Idle
-    }
-
-    private fun calculateStats(allProgress: List<ReadingProgress>) {
-        val booksRead = allProgress.count { it.status == com.johnmaronga.bookflow.data.model.ReadingStatus.FINISHED }
-        val pagesRead = allProgress
-            .filter { it.status == com.johnmaronga.bookflow.data.model.ReadingStatus.FINISHED }
-            .sumOf { it.totalPages }
-
-        // Calculate reading streak (consecutive days with reading activity)
-        val readingStreak = calculateReadingStreak(allProgress)
-
-        _uiState.value = _uiState.value.copy(
-            readingStats = ReadingStats(
-                booksRead = booksRead,
-                pagesRead = pagesRead,
-                readingStreak = readingStreak
-            )
-        )
-    }
-
-    private fun calculateReadingStreak(allProgress: List<ReadingProgress>): Int {
-        if (allProgress.isEmpty()) return 0
-
-        // Get all unique dates with reading activity (sorted descending)
-        val readingDates = allProgress
-            .map { it.lastUpdated }
-            .distinct()
-            .sortedDescending()
-
-        if (readingDates.isEmpty()) return 0
-
-        // Check if there's activity today or yesterday
-        val today = System.currentTimeMillis()
-        val oneDayMs = 24 * 60 * 60 * 1000L
-        val mostRecent = readingDates.first()
-
-        if (today - mostRecent > 2 * oneDayMs) {
-            return 0 // Streak broken if no activity in last 2 days
-        }
-
-        // Count consecutive days
-        var streak = 1
-        for (i in 0 until readingDates.size - 1) {
-            val daysDiff = (readingDates[i] - readingDates[i + 1]) / oneDayMs
-            if (daysDiff <= 1) {
-                streak++
-            } else {
-                break
-            }
-        }
-
-        return streak
     }
 }

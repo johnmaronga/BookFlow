@@ -95,68 +95,16 @@ fun AuthScreen(
 
                 Spacer(modifier = Modifier.height(48.dp))
 
-                // Name field (only for sign up)
-                if (uiState.isSignUpMode) {
-                    androidx.compose.material3.OutlinedTextField(
-                        value = uiState.name,
-                        onValueChange = { viewModel.updateName(it) },
-                        label = { Text("Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        enabled = !uiState.isLoading
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                // Email field
-                androidx.compose.material3.OutlinedTextField(
-                    value = uiState.email,
-                    onValueChange = { viewModel.updateEmail(it) },
-                    label = { Text("Email") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = !uiState.isEmailValid,
-                    enabled = !uiState.isLoading,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Email
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Password field
-                androidx.compose.material3.OutlinedTextField(
-                    value = uiState.password,
-                    onValueChange = { viewModel.updatePassword(it) },
-                    label = { Text("Password") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = !uiState.isPasswordValid,
-                    enabled = !uiState.isLoading,
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Password
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Main action button (Sign In or Sign Up)
+                // Sign In Button
                 Button(
-                    onClick = {
-                        if (uiState.isSignUpMode) {
-                            viewModel.signUp()
-                        } else {
-                            viewModel.signIn()
-                        }
-                    },
+                    onClick = { viewModel.signIn() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
                     enabled = !uiState.isLoading
                 ) {
                     Text(
-                        text = if (uiState.isSignUpMode) "Create Account" else "Sign In",
+                        text = "Sign In",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -164,17 +112,18 @@ fun AuthScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Toggle between Sign In and Sign Up
-                androidx.compose.material3.TextButton(
-                    onClick = { viewModel.toggleSignUpMode() },
+                // Sign Up Button (Outlined)
+                OutlinedButton(
+                    onClick = { viewModel.signUp() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                     enabled = !uiState.isLoading
                 ) {
                     Text(
-                        text = if (uiState.isSignUpMode)
-                            "Already have an account? Sign In"
-                        else
-                            "Don't have an account? Sign Up",
-                        fontSize = 14.sp
+                        text = "Create Account",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
 

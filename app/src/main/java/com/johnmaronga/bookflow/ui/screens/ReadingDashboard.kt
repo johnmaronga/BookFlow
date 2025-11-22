@@ -34,9 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.johnmaronga.bookflow.ui.theme.BookFlowTheme
 import com.johnmaronga.bookflow.ui.viewmodel.DashboardViewModel
-import com.johnmaronga.bookflow.ui.viewmodel.ReadingStats
 import com.johnmaronga.bookflow.ui.viewmodel.ViewModelFactory
 
 @Composable
@@ -65,7 +62,6 @@ fun DashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showAddBookDialog by remember { mutableStateOf(false) }
 
     // Show error messages
     LaunchedEffect(uiState.error) {
@@ -74,26 +70,11 @@ fun DashboardScreen(
             viewModel.clearError()
         }
     }
-
-    // Show Add Book Dialog
-    if (showAddBookDialog) {
-        AddBookDialog(
-            viewModel = viewModel,
-            onDismiss = {
-                showAddBookDialog = false
-                viewModel.clearSearchResults()
-            },
-            onBookAdded = {
-                showAddBookDialog = false
-                viewModel.clearSearchResults()
-            }
-        )
-    }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddBookDialog = true },
+                onClick = onAddBookClick,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(Icons.Default.Add, "Add Book")
@@ -125,7 +106,7 @@ fun DashboardScreen(
             // Header with Stats
             item {
                 DashboardHeader(
-                    stats = uiState.readingStats,
+                    stats = ReadingStats(), // TODO: Calculate from actual data
                     onSearchClick = { onSeeAllClick("search") },
                     onSyncClick = { viewModel.syncData() },
                     isSyncing = uiState.isSyncing
@@ -135,7 +116,8 @@ fun DashboardScreen(
             // Quick Actions
             item {
                 QuickActionsRow(
-                    onAddBookClick = { showAddBookDialog = true },
+                    onAddBookClick = onAddBookClick,
+                    //onSearchClick = { onSeeAllClick("search") },
                     onWebSearchClick = onWebSearchClick
                 )
             }
@@ -153,21 +135,15 @@ fun DashboardScreen(
                     EmptyColumnCard(
                         message = "No books currently being read",
                         actionText = "Add Book",
-                        onActionClick = { showAddBookDialog = true }
+                        onActionClick = onAddBookClick
                     )
                 }
             } else {
-                items(uiState.currentlyReading) { bookWithProgress ->
-                    BookProgressCard(
-                        book = Book(
-                            id = bookWithProgress.book.id,
-                            title = bookWithProgress.book.title,
-                            author = bookWithProgress.book.author,
-                            coverUrl = bookWithProgress.book.coverImageUrl,
-                            totalPages = bookWithProgress.progress.totalPages,
-                            currentPage = bookWithProgress.progress.currentPage
-                        ),
-                        onClick = { onBookClick(bookWithProgress.book.id) }
+                items(uiState.currentlyReading) { progress ->
+                    // TODO: Fetch book details and display
+                    Text(
+                        text = "Book ID: ${progress.bookId} - ${progress.currentPage}/${progress.totalPages}",
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
             }
@@ -238,7 +214,7 @@ fun DashboardScreen(
                             bookId = review.bookId,
                             rating = review.rating,
                             content = review.reviewText ?: "",
-                            date = com.johnmaronga.bookflow.utils.DateFormatter.formatRelativeTime(review.createdAt)
+                            date = "Recently" // TODO: Format timestamp
                         ),
                         onBookClick = { onBookClick(review.bookId) }
                     )
@@ -490,7 +466,7 @@ fun BookProgressCard(
                     )
                     Spacer(modifier = Modifier.size(4.dp))
                     LinearProgressIndicator(
-                        progress = { progress },
+                        progress = progress,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp),
@@ -740,7 +716,12 @@ data class Review(
     val spoiler: Boolean = false
 )
 
-
+data class ReadingStats(
+    val booksRead: Int = 0,
+    val pagesRead: Int = 0,
+    val readingStreak: Int = 0,
+    val favoriteGenre: String = ""
+)
 
 enum class BookShelf {
     CURRENTLY_READING, WANT_TO_READ, READ, DNF
@@ -770,7 +751,45 @@ fun WebSearchDialogPreview() {
 @Preview(showBackground = true)
 @Composable
 fun DashboardScreenWithDataPreview() {
+    val sampleBooks = listOf(
+        Book(
+            id = "1",
+            title = "The Midnight Library",
+            author = "Matt Haig",
+            totalPages = 304,
+            currentPage = 150
+        ),
+        Book(
+            id = "2",
+            title = "Project Hail Mary",
+            author = "Andy Weir",
+            totalPages = 476,
+            currentPage = 89
+        )
+    )
+
+    val sampleReviews = listOf(
+        Review(
+            id = "1",
+            bookId = "3",
+            rating = 4.5f,
+            content = "Absolutely loved this book! The character development was incredible and the plot kept me engaged until the very end.",
+            date = "2024-01-15"
+        )
+    )
+
+    val sampleStats = ReadingStats(
+        booksRead = 12,
+        pagesRead = 3847,
+        readingStreak = 15,
+        favoriteGenre = "Science Fiction"
+    )
+
     BookFlowTheme {
-        DashboardScreen()
+        DashboardScreen(
+            currentlyReading = sampleBooks,
+            recentReviews = sampleReviews,
+            readingStats = sampleStats
+        )
     }
 }
