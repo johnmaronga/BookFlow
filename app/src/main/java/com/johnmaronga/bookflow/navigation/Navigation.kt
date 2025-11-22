@@ -1,22 +1,36 @@
 package com.johnmaronga.bookflow.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.johnmaronga.bookflow.data.local.AppDatabase
+import com.johnmaronga.bookflow.data.local.SessionManager
+import com.johnmaronga.bookflow.data.remote.RetrofitClient
+import com.johnmaronga.bookflow.data.repository.BookRepositoryImpl
 import com.johnmaronga.bookflow.ui.screens.AuthScreen
+import com.johnmaronga.bookflow.ui.screens.BookDetailsScreen
 import com.johnmaronga.bookflow.ui.screens.DashboardScreen
 import com.johnmaronga.bookflow.ui.screens.WelcomeScreen
+import com.johnmaronga.bookflow.ui.viewmodel.DashboardViewModel
+import com.johnmaronga.bookflow.ui.viewmodel.ViewModelFactory
+import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
     object Welcome : Screen("welcome")
     object Auth : Screen("auth")
     object Dashboard : Screen("dashboard")
-    // You can add more screens here later like:
-    // object Home : Screen("home")
-    // object SignUp : Screen("signup")
-    // object AddBook : Screen("add_book")
-    // object BookDetails : Screen("book_details")
+    object BookDetails : Screen("book_details/{bookId}") {
+        fun createRoute(bookId: String) = "book_details/$bookId"
+    }
 }
 
 @Composable
@@ -72,24 +86,57 @@ fun BookFlowNavigation(
 
         composable(Screen.Dashboard.route) {
             DashboardScreen(
-                onAddBookClick = {
-                    // TODO: Navigate to Add Book screen when implemented
-                    // navController.navigate(Screen.AddBook.route)
-                },
                 onSeeAllClick = { section ->
                     // TODO: Navigate to detailed lists when implemented
-                    // when(section) {
-                    //     "currently_reading" -> navController.navigate("currently_reading_list")
-                    //     "recommendations" -> navController.navigate("recommendations_list")
-                    //     "reviews" -> navController.navigate("reviews_list")
-                    // }
                 },
                 onBookClick = { bookId ->
-                    // TODO: Navigate to Book Details screen when implemented
-                    // navController.navigate("${Screen.BookDetails.route}/$bookId")
+                    navController.navigate(Screen.BookDetails.createRoute(bookId))
                 },
-                onWebSearchClick = onWebSearchRequest // Add the web search callback here
+                onWebSearchClick = onWebSearchRequest
             )
+        }
+
+        composable(Screen.BookDetails.route) { backStackEntry ->
+            val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
+            val context = LocalContext.current
+            val viewModel: DashboardViewModel = viewModel(
+                factory = ViewModelFactory(context)
+            )
+
+            var book by remember { mutableStateOf<com.johnmaronga.bookflow.data.model.Book?>(null) }
+            var progress by remember { mutableStateOf<com.johnmaronga.bookflow.data.model.ReadingProgress?>(null) }
+            var review by remember { mutableStateOf<com.johnmaronga.bookflow.data.model.Review?>(null) }
+            val scope = rememberCoroutineScope()
+
+            LaunchedEffect(bookId) {
+                scope.launch {
+                    val database = AppDatabase.getDatabase(context)
+                    val repository = BookRepositoryImpl(
+                        bookDao = database.bookDao(),
+                        readingProgressDao = database.readingProgressDao(),
+                        reviewDao = database.reviewDao(),
+                        apiService = RetrofitClient.bookApiService
+                    )
+                    book = repository.getBookById(bookId)
+                    progress = repository.getProgressByBookId(bookId)
+                    review = repository.getReviewByBookId(bookId)
+                }
+            }
+
+            book?.let { bookData ->
+                BookDetailsScreen(
+                    book = bookData,
+                    progress = progress,
+                    review = review,
+                    onBackClick = { navController.popBackStack() },
+                    onUpdateProgress = { newProgress ->
+                        viewModel.updateReadingProgress(newProgress)
+                    },
+                    onSaveReview = { newReview ->
+                        viewModel.addOrUpdateReview(newReview)
+                    }
+                )
+            }
         }
 
         // You can add more composable destinations here for future screens:
