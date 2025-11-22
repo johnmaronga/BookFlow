@@ -9,17 +9,20 @@ import com.johnmaronga.bookflow.data.local.converter.StringListConverter
 import com.johnmaronga.bookflow.data.local.dao.BookDao
 import com.johnmaronga.bookflow.data.local.dao.ReadingProgressDao
 import com.johnmaronga.bookflow.data.local.dao.ReviewDao
+import com.johnmaronga.bookflow.data.local.dao.UserDao
 import com.johnmaronga.bookflow.data.local.entity.BookEntity
 import com.johnmaronga.bookflow.data.local.entity.ReadingProgressEntity
 import com.johnmaronga.bookflow.data.local.entity.ReviewEntity
+import com.johnmaronga.bookflow.data.local.entity.UserEntity
 
 @Database(
     entities = [
         BookEntity::class,
         ReadingProgressEntity::class,
-        ReviewEntity::class
+        ReviewEntity::class,
+        UserEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(StringListConverter::class)
@@ -27,6 +30,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bookDao(): BookDao
     abstract fun readingProgressDao(): ReadingProgressDao
     abstract fun reviewDao(): ReviewDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile

@@ -83,4 +83,8 @@ dependencies {
 
     // WorkManager for background tasks
     implementation(libs.androidx.work.runtime.ktx)
+
+
+    // DataStore for preferences
+    implementation(libs.androidx.datastore.preferences)
 }
