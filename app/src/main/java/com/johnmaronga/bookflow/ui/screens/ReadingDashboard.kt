@@ -96,11 +96,20 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
+            // Sync indicator
+            if (uiState.isSyncing) {
+                item {
+                    SyncIndicator()
+                }
+            }
+
             // Header with Stats
             item {
                 DashboardHeader(
                     stats = ReadingStats(), // TODO: Calculate from actual data
-                    onSearchClick = { onSeeAllClick("search") }
+                    onSearchClick = { onSeeAllClick("search") },
+                    onSyncClick = { viewModel.syncData() },
+                    isSyncing = uiState.isSyncing
                 )
             }
 
@@ -218,9 +227,33 @@ fun DashboardScreen(
 }
 
 @Composable
+fun SyncIndicator() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(16.dp),
+            strokeWidth = 2.dp
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+        Text(
+            text = "Syncing books...",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
 fun DashboardHeader(
     stats: ReadingStats,
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit,
+    onSyncClick: () -> Unit = {},
+    isSyncing: Boolean = false
 ) {
     Column(
         modifier = Modifier
@@ -236,8 +269,22 @@ fun DashboardHeader(
                 text = "My Reading Dashboard",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f)
             )
+            IconButton(
+                onClick = onSyncClick,
+                enabled = !isSyncing
+            ) {
+                if (isSyncing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("🔄", style = MaterialTheme.typography.titleMedium)
+                }
+            }
             IconButton(onClick = onSearchClick) {
                 Icon(Icons.Default.Search, "Search Books")
             }

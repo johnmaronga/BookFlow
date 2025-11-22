@@ -2,6 +2,7 @@ package com.johnmaronga.bookflow
 
 import android.app.Application
 import android.media.MediaPlayer
+import com.johnmaronga.bookflow.workers.WorkManagerScheduler
 
 class Music : Application() {
     private var backgroundMusic: MediaPlayer? = null
@@ -10,6 +11,15 @@ class Music : Application() {
     override fun onCreate() {
         super.onCreate()
         setupBackgroundMusic()
+        setupBackgroundTasks()
+    }
+
+    private fun setupBackgroundTasks() {
+        // Schedule periodic book sync
+        WorkManagerScheduler.scheduleSyncWork(this)
+
+        // Schedule reading reminders (optional - can be enabled by user preference)
+        // WorkManagerScheduler.scheduleReadingReminders(this)
     }
 
     private fun setupBackgroundMusic() {
