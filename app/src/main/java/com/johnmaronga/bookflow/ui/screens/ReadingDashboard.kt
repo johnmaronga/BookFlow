@@ -751,45 +751,7 @@ fun WebSearchDialogPreview() {
 @Preview(showBackground = true)
 @Composable
 fun DashboardScreenWithDataPreview() {
-    val sampleBooks = listOf(
-        Book(
-            id = "1",
-            title = "The Midnight Library",
-            author = "Matt Haig",
-            totalPages = 304,
-            currentPage = 150
-        ),
-        Book(
-            id = "2",
-            title = "Project Hail Mary",
-            author = "Andy Weir",
-            totalPages = 476,
-            currentPage = 89
-        )
-    )
-
-    val sampleReviews = listOf(
-        Review(
-            id = "1",
-            bookId = "3",
-            rating = 4.5f,
-            content = "Absolutely loved this book! The character development was incredible and the plot kept me engaged until the very end.",
-            date = "2024-01-15"
-        )
-    )
-
-    val sampleStats = ReadingStats(
-        booksRead = 12,
-        pagesRead = 3847,
-        readingStreak = 15,
-        favoriteGenre = "Science Fiction"
-    )
-
     BookFlowTheme {
-        DashboardScreen(
-            currentlyReading = sampleBooks,
-            recentReviews = sampleReviews,
-            readingStats = sampleStats
-        )
+        DashboardScreen()
     }
 }
