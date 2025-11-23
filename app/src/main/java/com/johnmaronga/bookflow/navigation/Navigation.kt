@@ -102,12 +102,12 @@ fun BookFlowNavigation(
             val viewModel: DashboardViewModel = viewModel(
                 factory = ViewModelFactory(context)
             )
-
+            
             var book by remember { mutableStateOf<com.johnmaronga.bookflow.data.model.Book?>(null) }
             var progress by remember { mutableStateOf<com.johnmaronga.bookflow.data.model.ReadingProgress?>(null) }
             var review by remember { mutableStateOf<com.johnmaronga.bookflow.data.model.Review?>(null) }
             val scope = rememberCoroutineScope()
-
+            
             LaunchedEffect(bookId) {
                 scope.launch {
                     val database = AppDatabase.getDatabase(context)
@@ -122,7 +122,7 @@ fun BookFlowNavigation(
                     review = repository.getReviewByBookId(bookId)
                 }
             }
-
+            
             book?.let { bookData ->
                 BookDetailsScreen(
                     book = bookData,

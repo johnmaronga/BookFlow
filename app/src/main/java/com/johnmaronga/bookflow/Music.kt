@@ -17,7 +17,7 @@ class Music : Application() {
     private fun setupBackgroundTasks() {
         // Schedule periodic book sync
         WorkManagerScheduler.scheduleSyncWork(this)
-
+        
         // Schedule reading reminders (optional - can be enabled by user preference)
         // WorkManagerScheduler.scheduleReadingReminders(this)
     }

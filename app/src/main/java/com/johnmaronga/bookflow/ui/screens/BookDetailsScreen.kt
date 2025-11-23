@@ -173,7 +173,7 @@ fun BookDetailsScreen(
                                     else -> ReadingStatus.CURRENTLY_READING
                                 },
                                 startDate = progress?.startDate ?: System.currentTimeMillis(),
-                                finishDate = if (currentPage >= (book.pageCount ?: 0))
+                                finishDate = if (currentPage >= (book.pageCount ?: 0)) 
                                     System.currentTimeMillis() else null
                             )
                             onUpdateProgress(newProgress)

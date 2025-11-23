@@ -75,106 +75,157 @@ fun AuthScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Header
-                Text(
-                    text = "Welcome to Book Flow",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center
+            // Header
+            Text(
+                text = "Welcome to Book Flow",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Sign in to continue your reading journey",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Name field (only for sign up)
+            if (uiState.isSignUpMode) {
+                androidx.compose.material3.OutlinedTextField(
+                    value = uiState.name,
+                    onValueChange = { viewModel.updateName(it) },
+                    label = { Text("Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    enabled = !uiState.isLoading
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Sign in to continue your reading journey",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // Sign In Button
-                Button(
-                    onClick = { viewModel.signIn() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    enabled = !uiState.isLoading
-                ) {
-                    Text(
-                        text = "Sign In",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
                 Spacer(modifier = Modifier.height(16.dp))
-
-                // Sign Up Button (Outlined)
-                OutlinedButton(
-                    onClick = { viewModel.signUp() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    enabled = !uiState.isLoading
-                ) {
-                    Text(
-                        text = "Create Account",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Back Button (Less prominent)
-                Button(
-                    onClick = onBackClick,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                ) {
-                    Text("Back to Welcome")
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Skip for Now Button (Text button style - less prominent)
-                Button(
-                    onClick = {
-                        viewModel.skipAuth()
-                        onSkipForNowClick()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.primary
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    enabled = !uiState.isLoading
-                ) {
-                    Text(
-                        text = "Skip for now",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal
-                    )
-                }
             }
 
-            // Loading indicator
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
+            // Email field
+            androidx.compose.material3.OutlinedTextField(
+                value = uiState.email,
+                onValueChange = { viewModel.updateEmail(it) },
+                label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = !uiState.isEmailValid,
+                enabled = !uiState.isLoading,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Email
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Password field
+            androidx.compose.material3.OutlinedTextField(
+                value = uiState.password,
+                onValueChange = { viewModel.updatePassword(it) },
+                label = { Text("Password") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = !uiState.isPasswordValid,
+                enabled = !uiState.isLoading,
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Password
+                )
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Main action button (Sign In or Sign Up)
+            Button(
+                onClick = {
+                    if (uiState.isSignUpMode) {
+                        viewModel.signUp()
+                    } else {
+                        viewModel.signIn()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                enabled = !uiState.isLoading
+            ) {
+                Text(
+                    text = if (uiState.isSignUpMode) "Create Account" else "Sign In",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Toggle between Sign In and Sign Up
+            androidx.compose.material3.TextButton(
+                onClick = { viewModel.toggleSignUpMode() },
+                enabled = !uiState.isLoading
+            ) {
+                Text(
+                    text = if (uiState.isSignUpMode) 
+                        "Already have an account? Sign In" 
+                    else 
+                        "Don't have an account? Sign Up",
+                    fontSize = 14.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Back Button (Less prominent)
+            Button(
+                onClick = onBackClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Text("Back to Welcome")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Skip for Now Button (Text button style - less prominent)
+            Button(
+                onClick = {
+                    viewModel.skipAuth()
+                    onSkipForNowClick()
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                enabled = !uiState.isLoading
+            ) {
+                Text(
+                    text = "Skip for now",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal
                 )
             }
         }
+
+        // Loading indicator
+        if (uiState.isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+    }
     }
 }
 

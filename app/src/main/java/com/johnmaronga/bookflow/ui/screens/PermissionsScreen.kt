@@ -41,8 +41,8 @@ fun PermissionsScreen(
     onRequestNotificationPermission: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    var notificationEnabled by remember {
-        mutableStateOf(PermissionHelper.hasNotificationPermission(context))
+    var notificationEnabled by remember { 
+        mutableStateOf(PermissionHelper.hasNotificationPermission(context)) 
     }
 
     Scaffold { padding ->
@@ -160,9 +160,9 @@ fun PermissionCard(
                 Icon(
                     imageVector = if (isGranted) Icons.Default.Check else Icons.Default.Close,
                     contentDescription = if (isGranted) "Granted" else "Denied",
-                    tint = if (isGranted)
-                        MaterialTheme.colorScheme.primary
-                    else
+                    tint = if (isGranted) 
+                        MaterialTheme.colorScheme.primary 
+                    else 
                         MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(24.dp)
                 )

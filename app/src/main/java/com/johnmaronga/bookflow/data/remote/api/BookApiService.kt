@@ -7,7 +7,7 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface BookApiService {
-
+    
     /**
      * Search for books using Google Books API
      * @param query Search query (title, author, ISBN, etc.)

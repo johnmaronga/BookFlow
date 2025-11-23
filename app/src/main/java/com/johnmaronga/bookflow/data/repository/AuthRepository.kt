@@ -10,10 +10,10 @@ class AuthRepository(
     private val userDao: UserDao,
     private val sessionManager: SessionManager
 ) {
-
+    
     val isLoggedIn: Flow<Boolean> = sessionManager.isLoggedIn
     val currentUserEmail: Flow<String?> = sessionManager.userEmail
-
+    
     /**
      * Sign up a new user
      * Returns: Result with user ID on success, error message on failure
@@ -25,7 +25,7 @@ class AuthRepository(
             if (existingUser != null) {
                 return Result.failure(Exception("An account with this email already exists"))
             }
-
+            
             // Hash password and create user
             val passwordHash = PasswordHasher.hashPassword(password)
             val user = UserEntity(
@@ -33,18 +33,18 @@ class AuthRepository(
                 passwordHash = passwordHash,
                 name = name
             )
-
+            
             val userId = userDao.insertUser(user)
-
+            
             // Save session
             sessionManager.saveSession(userId, email, name)
-
+            
             Result.success(userId)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-
+    
     /**
      * Sign in an existing user
      * Returns: Result with user ID on success, error message on failure
@@ -53,31 +53,31 @@ class AuthRepository(
         return try {
             val user = userDao.getUserByEmail(email)
                 ?: return Result.failure(Exception("No account found with this email"))
-
+            
             // Verify password
             if (!PasswordHasher.verifyPassword(password, user.passwordHash)) {
                 return Result.failure(Exception("Incorrect password"))
             }
-
+            
             // Update last login
             userDao.updateLastLogin(user.id)
-
+            
             // Save session
             sessionManager.saveSession(user.id, user.email, user.name)
-
+            
             Result.success(user.id)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-
+    
     /**
      * Sign out current user
      */
     suspend fun signOut() {
         sessionManager.clearSession()
     }
-
+    
     /**
      * Get current user
      */
@@ -85,7 +85,7 @@ class AuthRepository(
         val userId = sessionManager.getCurrentUserId() ?: return null
         return userDao.getUserById(userId)
     }
-
+    
     /**
      * Check if any users exist (for first-time setup)
      */
