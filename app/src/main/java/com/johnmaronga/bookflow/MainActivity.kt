@@ -37,6 +37,8 @@ import com.johnmaronga.bookflow.utils.PermissionHelper
 import com.johnmaronga.bookflow.workers.WorkManagerScheduler
 import java.net.URLEncoder
 
+lateinit var content: () -> Unit
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var notificationPermissionLauncher: ActivityResultLauncher<String>
@@ -106,9 +108,8 @@ fun BookFlowApp(
             // Permission request dialog
             if (showPermissionDialog) {
                 PermissionRequestDialog(
-                    onDismiss = { showPermissionDialog = false },
+                    onDismiss = { },
                     onConfirm = {
-                        showPermissionDialog = false
                         onRequestNotificationPermission()
                     }
                 )
@@ -191,3 +192,4 @@ private fun openGoogleSearch(context: Context, query: String) {
         Log.e("WebSearch", "Error opening browser: ${e.message}")
     }
 }
+

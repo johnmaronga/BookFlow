@@ -139,27 +139,6 @@ fun BookFlowNavigation(
             }
         }
 
-        // You can add more composable destinations here for future screens:
-        /*
-        composable(Screen.AddBook.route) {
-            AddBookScreen(
-                onBackClick = { navController.popBackStack() },
-                onBookAdded = { book ->
-                    navController.navigate("${Screen.BookDetails.route}/${book.id}")
-                }
-            )
-        }
 
-        composable("${Screen.BookDetails.route}/{bookId}") { backStackEntry ->
-            val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
-            BookDetailsScreen(
-                bookId = bookId,
-                onBackClick = { navController.popBackStack() },
-                onEditClick = {
-                    // Navigate to edit screen
-                }
-            )
-        }
-        */
     }
 }

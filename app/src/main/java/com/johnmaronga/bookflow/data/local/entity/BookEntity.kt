@@ -39,7 +39,7 @@ fun BookEntity.toBook() = Book(
     ratingsCount = ratingsCount
 )
 
-fun Book.toEntity() = BookEntity(
+/* fun Book.toEntity() = BookEntity(
     id = id,
     title = title,
     author = author,
@@ -52,3 +52,22 @@ fun Book.toEntity() = BookEntity(
     averageRating = averageRating,
     ratingsCount = ratingsCount
 )
+
+ */
+fun Book.toEntity(): BookEntity {
+
+    return BookEntity(
+        id = id,
+        title = title,
+        author = author,
+        description = description,
+        coverImageUrl = coverImageUrl,  // Note: different field name!
+        isbn = isbn,
+        publishedDate = publishedDate,
+        pageCount = pageCount, // Map totalPages to pageCount
+        categories = categories,
+        averageRating = averageRating,
+        ratingsCount = ratingsCount,
+        addedAt = System.currentTimeMillis()
+    )
+}

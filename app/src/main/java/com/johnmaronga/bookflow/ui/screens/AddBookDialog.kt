@@ -1,8 +1,11 @@
 package com.johnmaronga.bookflow.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -47,7 +50,7 @@ fun AddBookDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Add Book")
+            Text("Add Book to Want to Read")
         },
         text = {
             Column(
@@ -56,7 +59,7 @@ fun AddBookDialog(
                 // Search field
                 OutlinedTextField(
                     value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    onValueChange = { newValue -> searchQuery = newValue },
                     label = { Text("Search by title, author, or ISBN") },
                     modifier = Modifier.fillMaxWidth(),
                     trailingIcon = {
@@ -79,7 +82,7 @@ fun AddBookDialog(
                 when (val state = searchResults) {
                     is UiState.Idle -> {
                         Text(
-                            text = "Search for books to add to your library",
+                            text = "Search for books to add to your Want to Read list",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -102,11 +105,11 @@ fun AddBookDialog(
                             LazyColumn(
                                 modifier = Modifier.height(300.dp)
                             ) {
-                                items(state.data) { book ->
+                                items(state.data) { book ->  // Explicit parameter
                                     BookSearchResultItem(
                                         book = book,
                                         onClick = {
-                                            viewModel.addBook(book)
+                                            viewModel.addBookToWantToRead(book)
                                             onBookAdded()
                                         }
                                     )
@@ -171,14 +174,29 @@ fun BookSearchResultItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                book.publishedDate?.let {
+                book.publishedDate?.let { date ->
                     Text(
-                        text = it,
+                        text = date,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun SimpleBookCoverPlaceholder(modifier: Modifier = Modifier) {
+    // Simple book cover placeholder
+    Card(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("📚", style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

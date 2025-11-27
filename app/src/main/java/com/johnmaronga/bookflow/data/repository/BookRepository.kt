@@ -17,6 +17,8 @@ interface BookRepository {
     suspend fun getBooksByCategory(category: String): Result<List<Book>>
     suspend fun insertBook(book: Book)
     suspend fun deleteBook(bookId: String)
+
+    fun getWantToRead(): Flow<List<ReadingProgress>>
     
     // Reading Progress operations
     fun getAllProgress(): Flow<List<ReadingProgress>>
@@ -35,4 +37,8 @@ interface BookRepository {
     
     // Sync operations
     suspend fun syncBooks(): Result<Unit>
+
+    // Debugging
+    suspend fun debugGetAllBooks(): String
+    suspend fun debugGetBook(bookId: String): String
 }
