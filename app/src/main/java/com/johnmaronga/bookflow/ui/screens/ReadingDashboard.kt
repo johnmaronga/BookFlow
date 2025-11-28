@@ -1,5 +1,7 @@
 package com.johnmaronga.bookflow.ui.screens
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,28 +16,43 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,207 +65,65 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.johnmaronga.bookflow.Music
+import com.johnmaronga.bookflow.data.local.entity.ReviewEntity
 import com.johnmaronga.bookflow.ui.theme.BookFlowTheme
 import com.johnmaronga.bookflow.ui.viewmodel.DashboardViewModel
 import com.johnmaronga.bookflow.ui.viewmodel.ReadingStats
 import com.johnmaronga.bookflow.ui.viewmodel.ViewModelFactory
+import kotlinx.coroutines.launch
 
-@Composable
-fun DashboardScreen(
-    onAddBookClick: () -> Unit = {},
-    onSeeAllClick: (String) -> Unit = {},
-    onBookClick: (String) -> Unit = {},
-    onWebSearchClick: () -> Unit = {},
-    viewModel: DashboardViewModel = viewModel(
-        factory = ViewModelFactory(LocalContext.current)
+// Data classes for the new functionality
+data class Book(
+    val id: String,
+    val title: String,
+    val author: String,
+    val coverUrl: String? = null,
+    val isbn: String? = null,
+    val totalPages: Int = 0,
+    val currentPage: Int = 0,
+    val shelf: BookShelf = BookShelf.WANT_TO_READ,
+    val rating: Float = 0f,
+    val startDate: String? = null,
+    val endDate: String? = null
+)
+
+// UI Model for Reviews
+data class ReviewUiModel(
+    val id: String,
+    val bookId: String,
+    val rating: Float,
+    val content: String,
+    val date: String,
+    val spoiler: Boolean = false
+)
+
+// Extension function to convert ReviewEntity to ReviewUiModel
+fun ReviewEntity.toReviewUiModel(): ReviewUiModel {
+    return ReviewUiModel(
+        id = id.toString(),
+        bookId = bookId,
+        rating = rating,
+        content = reviewText ?: "",
+        date = com.johnmaronga.bookflow.utils.DateFormatter.formatRelativeTime(createdAt)
     )
-) {
-    val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-    var showAddBookDialog by remember { mutableStateOf(false) }
-
-    // Show error messages
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let { error ->
-            snackbarHostState.showSnackbar(error)
-            viewModel.clearError()
-        }
-    }
-
-    // Show Add Book Dialog
-    if (showAddBookDialog) {
-        AddBookDialog(
-            viewModel = viewModel,
-            onDismiss = {
-                showAddBookDialog = false
-                viewModel.clearSearchResults()
-            },
-            onBookAdded = {
-                showAddBookDialog = false
-                viewModel.clearSearchResults()
-            }
-        )
-    }
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddBookDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, "Add Book")
-            }
-        }
-    ) { innerPadding ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-            return@Scaffold
-        }
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            // Sync indicator
-            if (uiState.isSyncing) {
-                item {
-                    SyncIndicator()
-                }
-            }
-
-            // Header with Stats
-            item {
-                DashboardHeader(
-                    stats = uiState.readingStats,
-                    onSearchClick = { onSeeAllClick("search") },
-                    onSyncClick = { viewModel.syncData() },
-                    isSyncing = uiState.isSyncing
-                )
-            }
-
-            // Quick Actions
-            item {
-                QuickActionsRow(
-                    onAddBookClick = { showAddBookDialog = true },
-                    onWebSearchClick = onWebSearchClick
-                )
-            }
-
-            // Currently Reading Section
-            item {
-                SectionHeader(
-                    title = "Currently Reading",
-                    onSeeAllClick = { onSeeAllClick("currently_reading") }
-                )
-            }
-
-            if (uiState.currentlyReading.isEmpty()) {
-                item {
-                    EmptyColumnCard(
-                        message = "No books currently being read",
-                        actionText = "Add Book",
-                        onActionClick = { showAddBookDialog = true }
-                    )
-                }
-            } else {
-                items(uiState.currentlyReading) { bookWithProgress ->
-                    BookProgressCard(
-                        book = Book(
-                            id = bookWithProgress.book.id,
-                            title = bookWithProgress.book.title,
-                            author = bookWithProgress.book.author,
-                            coverUrl = bookWithProgress.book.coverImageUrl,
-                            totalPages = bookWithProgress.progress.totalPages,
-                            currentPage = bookWithProgress.progress.currentPage
-                        ),
-                        onClick = { onBookClick(bookWithProgress.book.id) }
-                    )
-                }
-            }
-
-            // Want to Read Section
-            item {
-                SectionHeader(
-                    title = "Want to Read",
-                    onSeeAllClick = { onSeeAllClick("want_to_read") }
-                )
-            }
-            item {
-                EmptyColumnCard(
-                    message = "No books in want to read list",
-                    actionText = "Browse Books",
-                    onActionClick = { onSeeAllClick("search") }
-                )
-            }
-
-            // Trending Books Section
-            item {
-                SectionHeader(
-                    title = "Trending Books",
-                    onSeeAllClick = { onSeeAllClick("trending") }
-                )
-            }
-
-            if (uiState.trendingBooks.isEmpty()) {
-                item {
-                    EmptyColumnCard(
-                        message = "Loading trending books..."
-                    )
-                }
-            } else {
-                items(uiState.trendingBooks.chunked(2)) { rowBooks ->
-                    BookRow(
-                        books = rowBooks.map { book ->
-                            Book(
-                                id = book.id,
-                                title = book.title,
-                                author = book.author,
-                                coverUrl = book.coverImageUrl,
-                                totalPages = book.pageCount ?: 0
-                            )
-                        },
-                        onBookClick = { bookId -> onBookClick(bookId) }
-                    )
-                }
-            }
-
-            // Recent Reviews Section
-            item {
-                SectionHeader(
-                    title = "Recent Reviews",
-                    onSeeAllClick = { onSeeAllClick("reviews") }
-                )
-            }
-
-            if (uiState.recentReviews.isEmpty()) {
-                item {
-                    EmptyColumnCard(message = "No reviews yet")
-                }
-            } else {
-                items(uiState.recentReviews) { review ->
-                    ReviewCard(
-                        review = Review(
-                            id = review.id,
-                            bookId = review.bookId,
-                            rating = review.rating,
-                            content = review.reviewText ?: "",
-                            date = com.johnmaronga.bookflow.utils.DateFormatter.formatRelativeTime(review.createdAt)
-                        ),
-                        onBookClick = { onBookClick(review.bookId) }
-                    )
-                }
-            }
-
-            item { Spacer(modifier = Modifier.height(80.dp)) }
-        }
-    }
 }
+
+enum class BookShelf {
+    CURRENTLY_READING, WANT_TO_READ, READ, DNF
+}
+
+// Share progress utility function
+fun shareReadingProgress(context: Context) {
+    val shareIntent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_TEXT, "Check out my reading progress on BookFlow! 📚")
+        type = "text/plain"
+    }
+    context.startActivity(Intent.createChooser(shareIntent, "Share Reading Progress"))
+}
+
+// Move all helper composables to FILE LEVEL (outside DashboardScreen)
 
 @Composable
 fun SyncIndicator() {
@@ -374,9 +249,7 @@ fun StatCard(
 @Composable
 fun QuickActionsRow(
     onAddBookClick: () -> Unit,
-    //onSearchClick: () -> Unit,
     onWebSearchClick: () -> Unit
-
 ) {
     Row(
         modifier = Modifier
@@ -586,7 +459,7 @@ fun BookCoverCard(
 
 @Composable
 fun ReviewCard(
-    review: Review,
+    review: ReviewUiModel,
     onBookClick: () -> Unit
 ) {
     Card(
@@ -688,7 +561,6 @@ fun EmptyColumnCard(
     }
 }
 
-// Keep your existing SectionHeader composable unchanged
 @Composable
 fun SectionHeader(
     title: String,
@@ -716,61 +588,279 @@ fun SectionHeader(
     }
 }
 
-// Data classes for the new functionality
-data class Book(
-    val id: String,
-    val title: String,
-    val author: String,
-    val coverUrl: String? = null,
-    val isbn: String? = null,
-    val totalPages: Int = 0,
-    val currentPage: Int = 0,
-    val shelf: BookShelf = BookShelf.WANT_TO_READ,
-    val rating: Float = 0f,
-    val startDate: String? = null,
-    val endDate: String? = null
-)
-
-data class Review(
-    val id: String,
-    val bookId: String,
-    val rating: Float,
-    val content: String,
-    val date: String,
-    val spoiler: Boolean = false
-)
-
-
-
-enum class BookShelf {
-    CURRENTLY_READING, WANT_TO_READ, READ, DNF
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DashboardTopBar(
+    onMenuClick: () -> Unit,
+    onSyncClick: () -> Unit,
+    isSyncing: Boolean = false
+) {
+    CenterAlignedTopAppBar(
+        title = {
+            Text(
+                text = "BookFlow",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onMenuClick) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu"
+                )
+            }
+        },
+        actions = {
+            IconButton(
+                onClick = onSyncClick,
+                enabled = !isSyncing
+            ) {
+                if (isSyncing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Sync,
+                        contentDescription = "Sync"
+                    )
+                }
+            }
+        }
+    )
 }
 
-@Preview(showBackground = true)
 @Composable
-fun DashboardScreenPreview() {
-    BookFlowTheme {
-        DashboardScreen(
-            onWebSearchClick = {}
+fun DrawerContent(
+    onProfileClick: () -> Unit,
+    onCloseDrawer: () -> Unit
+) {
+    val context = LocalContext.current
+    val musicApp = context.applicationContext as Music
+    var isMuted by remember { mutableStateOf(musicApp.isMuted()) }
+    var isDarkTheme by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        // Drawer Header
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(24.dp)
+        ) {
+            Column {
+                Text(
+                    text = "BookFlow",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Text(
+                    text = "Your Reading Companion",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                )
+            }
+        }
+
+        // Drawer Items
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(vertical = 8.dp)
+        ) {
+            // Profile
+            DrawerItem(
+                icon = Icons.Default.AccountCircle,
+                label = "Profile",
+                onClick = onProfileClick
+            )
+
+            Divider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+
+            // Music Toggle
+            DrawerItem(
+                icon = if (isMuted) Icons.Default.MusicOff else Icons.Default.MusicNote,
+                label = if (isMuted) "Enable Music" else "Disable Music",
+                onClick = {
+                    musicApp.toggleMusic()
+                    isMuted = musicApp.isMuted()
+                }
+            )
+
+            // Theme Toggle
+            DrawerItem(
+                icon = if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
+                label = if (isDarkTheme) "Light Mode" else "Dark Mode",
+                onClick = {
+                    isDarkTheme = !isDarkTheme
+                    // TODO: Implement theme switching
+                }
+            )
+
+            // Share Progress
+            DrawerItem(
+                icon = Icons.Default.Share,
+                label = "Share Progress",
+                onClick = {
+                    shareReadingProgress(context)
+                    onCloseDrawer()
+                }
+            )
+        }
+
+        // App Version
+        Text(
+            text = "BookFlow v1.0",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         )
     }
 }
 
-@Preview(showBackground = true)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WebSearchDialogPreview() {
-    BookFlowTheme {
-        WebSearchDialog(
-            onDismiss = {},
-            onSearch = {}
+fun DrawerItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
         )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.size(16.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 
-@Preview(showBackground = true)
+// MAIN DASHBOARD SCREEN COMPOSABLE
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreenWithDataPreview() {
-    BookFlowTheme {
-        DashboardScreen()
+fun DashboardScreen(
+    onAddBookClick: () -> Unit = {},
+    onSeeAllClick: (String) -> Unit = {},
+    onBookClick: (String) -> Unit = {},
+    onWebSearchClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    viewModel: DashboardViewModel = viewModel(
+        factory = ViewModelFactory(LocalContext.current)
+    )
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var showAddBookDialog by remember { mutableStateOf(false) }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    // Show error messages
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearError()
+        }
+    }
+
+    // Show Add Book Dialog
+    if (showAddBookDialog) {
+        AddBookDialog(
+            viewModel = viewModel,
+            onDismiss = {
+                showAddBookDialog = false
+                viewModel.clearSearchResults()
+            },
+            onBookAdded = {
+                showAddBookDialog = false
+                viewModel.clearSearchResults()
+            }
+        )
+    }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DrawerContent(
+                onProfileClick = {
+                    scope.launch { drawerState.close() }
+                    onProfileClick()
+                },
+                onCloseDrawer = { scope.launch { drawerState.close() } }
+            )
+        }
+    ) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                DashboardTopBar(
+                    onMenuClick = { scope.launch { drawerState.open() } },
+                    onSyncClick = { viewModel.syncData() },
+                    isSyncing = uiState.isSyncing
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { showAddBookDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(Icons.Default.Add, "Add Book")
+                }
+            }
+        ) { innerPadding ->
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+                return@Scaffold
+            }
+            LazyColumn(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                // Sync indicator
+                if (uiState.isSyncing) {
+                    item {
+                        SyncIndicator()}
+                }
+            }
+        }
     }
 }
+                // Dashboard content
+

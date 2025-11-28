@@ -15,6 +15,9 @@ interface ReadingProgressDao {
     @Query("SELECT * FROM reading_progress WHERE bookId = :bookId")
     fun getProgressByBookIdFlow(bookId: String): Flow<ReadingProgressEntity?>
 
+    @Query("SELECT * FROM reading_progress WHERE status = 'WANT_TO_READ'")
+    fun getWantToRead(): Flow<List<ReadingProgressEntity>>
+
     @Query("SELECT * FROM reading_progress WHERE status = :status ORDER BY lastUpdated DESC")
     fun getProgressByStatus(status: String): Flow<List<ReadingProgressEntity>>
 

@@ -10,10 +10,3 @@ data class ReadingProgress(
     val finishDate: Long? = null,
     val lastUpdated: Long = System.currentTimeMillis()
 )
-
-enum class ReadingStatus {
-    WANT_TO_READ,
-    CURRENTLY_READING,
-    FINISHED,
-    DNF // Did Not Finish
-}
